@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 interface EventData {
     date_start: string;
     title: string;
-    price_type: string;
+    price_detail: string;
 }
 
 const SecondPage: React.FC = () => {
@@ -15,33 +15,34 @@ const SecondPage: React.FC = () => {
     const startDate = new Date(searchParams.get('startDate') || '');
     const endDate = new Date(searchParams.get('endDate') || '');
 
-    const [events, setEvents] = useState<EventData[]>([]);
+    const [listAction, setListAction] = useState<any>([])
+    const [filteredListAction, setFilteredListAction] = useState<any>([])
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get(
-                    `https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/`
-                );
+        axios({
+            method: 'get',
+            url: `https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/que-faire-a-paris-/records?limit=20`,
+        }).then(res => {
+            setListAction(res.data.results)
+        }).catch(error => {
+            console.log('error = ', error)
+        })
+    }, []);
 
-                if (!response.data?.records) {
-                    throw new Error('No data returned from the API');
-                }
-
-                const fetchedEvents: EventData[] = response.data.records.map((record: any) => ({
-                    date_start: record?.fields?.date_start || '',
-                    title: record?.fields?.title || '',
-                    price_type: record?.fields?.price_type || '',
-                }));
-
-                setEvents(fetchedEvents);
-            } catch (error) {
-                console.error('Error fetching data:', error);
+    useEffect(() => {
+        if (startDate !== null && endDate !== null) {
+            for (let i = 0; i < listAction.length; i++) {
+                console.log('listAction[i] = ', listAction[i].date_start)
+                console.log('listAction[i] = ', listAction[i].title)
+                console.log('listAction[i] = ', listAction[i].price_detail)
             }
-        };
 
-        fetchData();
-    }, [startDate, endDate]);
+            setFilteredListAction(listAction.filter((event: EventData) => {
+                const eventDate = new Date(event.date_start);
+                return eventDate >= startDate && eventDate <= endDate;
+            }));
+        }
+    }, [listAction]);
 
     return (
         <div>
@@ -55,11 +56,11 @@ const SecondPage: React.FC = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {events.map((event, index) => (
+                    {filteredListAction.map((event: EventData, index: number) => (
                         <tr key={index}>
                             <td>{event.date_start}</td>
                             <td>{event.title}</td>
-                            <td>{event.price_type}</td>
+                            <td>{event.price_detail}</td>
                         </tr>
                     ))}
                 </tbody>
